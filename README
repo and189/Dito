@@ -1,20 +1,26 @@
-Discord Role Bot
-This is a Discord bot that allows you to assign roles to members for a specified number of days. After the specified number of days, the role will be automatically removed from the member.
+# Discord Bot
 
-Setup
-Install the required dependencies by running pip install -r requirements.txt.
-Create a .env file in the root directory of the project and add your bot token and allowed user IDs as follows:
-BOT_TOKEN=your_bot_token_here
-ALLOWED_USERS=user_id_1,user_id_2,user_id_3
+Dies ist ein Discord-Bot, der die Verwaltung von Rollen in einem Discord-Server automatisiert.
 
-Run the bot using python bot.py.
-Usage
-To assign a role to a member, use the !addrole command followed by the member mention, role mention, and number of days. For example:
+## Voraussetzungen
 
-!addrole @member @role 7
+- Python 3.6 oder höher
+- discord.py
+- sqlite3
+- python-dotenv
 
-This will assign the specified role to the mentioned member for 7 days.
+## Installation
 
-Only users with IDs specified in the ALLOWED_USERS environment variable are allowed to use this command.
+1. Installieren Sie die erforderlichen Abhängigkeiten mit `pip install -r requirements.txt`.
+2. Erstellen Sie eine `.env`-Datei im Stammverzeichnis des Projekts und fügen Sie die folgenden Umgebungsvariablen hinzu:
 
-The bot will check every minute for roles that have expired and remove them from members. Members will also receive a message 5 days before their role is removed.
+BOT_TOKEN=<Ihr Bot-Token> 
+ALLOWED_USERS=user1id,user2id
+## Verwendung
+
+Führen Sie das Skript mit `python bot.py` aus.
+
+### Befehle
+
+- `!addrole <member> <role> <days>`: Fügt einem Mitglied eine Rolle für eine bestimmte Anzahl von Tagen hinzu.
+- `!extendrole <member> <role> <days>`: Verlängert die Rolle eines Mitglieds um eine bestimmte Anzahl von Tagen.
