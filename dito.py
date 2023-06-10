@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands, tasks
+from discord_slash import SlashCommand, SlashContext
+from discord_slash.utils.manage_commands import create_option
 import sqlite3
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -12,6 +14,7 @@ allowed_users = [int(user_id) for user_id in os.getenv('ALLOWED_USERS').split(',
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
+slash = SlashCommand(bot, sync_commands=True)
 
 # Verbindung zur SQLite-Datenbank herstellen
 conn = sqlite3.connect('members.db')
@@ -27,8 +30,29 @@ async def on_ready():
     # Task starten, um regelmäßig die Rollen zu überprüfen
     check_roles.start()
 
-@bot.command(name='addrole')
-async def add_role(ctx, member: discord.Member, role: discord.Role, days: int):
+@slash.slash(name="addrole",
+             description="Fügt einem Mitglied eine Rolle hinzu",
+             options=[
+               create_option(
+                 name="member",
+                 description="Das Mitglied, dem die Rolle hinzugefügt werden soll",
+                 option_type=6,
+                 required=True
+               ),
+               create_option(
+                 name="role",
+                 description="Die Rolle, die hinzugefügt werden soll",
+                 option_type=8,
+                 required=True
+               ),
+               create_option(
+                 name="days",
+                 description="Die Anzahl der Tage, für die die Rolle gegeben wird",
+                 option_type=4,
+                 required=True
+               )
+             ])
+async def _add_role(ctx: SlashContext, member: discord.Member, role: discord.Role, days: int):
     if ctx.author.id not in allowed_users:
         await ctx.send('Du bist nicht berechtigt, diesen Befehl zu verwenden.')
         return
@@ -49,6 +73,48 @@ async def add_role(ctx, member: discord.Member, role: discord.Role, days: int):
     conn.commit()
     await ctx.send(f'{member.mention} wurde die Rolle {role.name} für {days} Tage gegeben.')
     await member.send(f'Du wurdest der Rolle {role.name} hinzugefügt und wirst in {days} Tagen entfernt.')
+
+@slash.slash(name="extendrole",
+             description="Verlängert die Laufzeit einer vorhandenen Rolle",
+             options=[
+               create_option(
+                 name="member",
+                 description="Das Mitglied, dessen Rolle verlängert werden soll",
+                 option_type=6,
+                 required=True
+               ),
+               create_option(
+                 name="role",
+                 description="Die Rolle, die verlängert werden soll",
+                 option_type=8,
+                 required=True
+               ),
+               create_option(
+                 name="days",
+                 description="Die Anzahl der Tage, um die die Laufzeit verlängert wird",
+                 option_type=4,
+                 required=True
+               )
+             ])
+async def _extend_role(ctx: SlashContext, member: discord.Member, role: discord.Role, days: int):
+    if ctx.author.id not in allowed_users:
+        await ctx.send('Du bist nicht berechtigt, diesen Befehl zu verwenden.')
+        return
+
+    # Überprüfen, ob der Nutzer bereits eine Rolle hat
+    c.execute('SELECT * FROM members WHERE user_id=? AND role_id=?', (member.id, role.id))
+    result = c.fetchone()
+    if not result:
+        await ctx.send(f'{member.mention} hat diese Rolle nicht.')
+        return
+
+    # Enddatum auslesen und aktualisieren
+    end_date = datetime.strptime(result[3], '%Y-%m-%d %H:%M:%S')
+    end_date += timedelta(days=days)
+    # Eintrag in der Datenbank aktualisieren
+    c.execute('UPDATE members SET end_date=? WHERE id=?', (end_date.strftime('%Y-%m-%d %H:%M:%S'), result[0]))
+    conn.commit()
+    await ctx.send(f'Die Rolle {role.name} von {member.mention} wurde um {days} Tage verlängert.')
 
 @tasks.loop(minutes=1)
 async def check_roles():
