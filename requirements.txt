@@ -1,3 +1,4 @@
 discord.py
 sqlite3
 python-dotenv
+discord-py-interactions
